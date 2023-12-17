@@ -1,0 +1,35 @@
+server:
+  port: 10_16
+
+program-agent:
+  charts:
+    bot-message: true
+  client:
+    token: "tuts-token-dew-bot"
+    time-delay-send: 15000
+    host: "http://wds-program-agent.ru/api/"
+    myHost: "http://localhost:1016/api/"
+
+telegram:
+  bot:
+    username: "@ltestBotForLearningLibs_bot"
+    token: "6882686212:AAFtucaA-Q709RnkioLWNJUjaZCmU2c3PxU"
+    session:
+      enable: true
+      time-life:
+        chat: 60
+        user: 10
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/third_test_bot
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: true
