@@ -1,7 +1,7 @@
 package com.github.lltal.testlibbot.input.commands;
 
 import com.github.lltal.testlibbot.model.domain.UserData;
-import com.github.lltal.testlibbot.services.UserService;
+import com.github.lltal.testlibbot.services.UserDataService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ import java.util.List;
 public class MyInfoCommand {
 
     @NonNull
-    private final UserService userService;
+    private final UserDataService userService;
     private final List<String> messagesText = List.of(
             "введи имя",
             "введи возраст",
@@ -52,7 +52,7 @@ public class MyInfoCommand {
             @ParamName("message") Message message
     ){
         String text = message.getText();
-        UserData userData = userService.findUser(userId);
+        UserData userData = userService.findUserData(userId);
         setValue(userData, text);
 
         userService.save(userId, userData);
