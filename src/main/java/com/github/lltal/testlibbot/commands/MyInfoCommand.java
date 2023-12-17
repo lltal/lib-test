@@ -1,7 +1,8 @@
 package com.github.lltal.testlibbot.commands;
 
 import com.github.lltal.testlibbot.domain.User;
-import com.github.lltal.testlibbot.repository.impl.UserRepo;
+import com.github.lltal.testlibbot.repository.UserRepo;
+import com.github.lltal.testlibbot.services.UserService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,7 @@ import java.util.Optional;
 public class MyInfoCommand {
 
     @NonNull
-    private final UserRepo userRepo;
+    private final UserService userService;
     private final List<String> messagesText = List.of(
             "введи имя",
             "введи возраст",
@@ -34,8 +35,8 @@ public class MyInfoCommand {
             @ParamName("chatId") Long chatId,
             @ParamName("userId") Long userId
     ) {
-        User user = new User(userId);
-        userRepo.save(user);
+
+        User user = userService.createIfAbsent(userId);
 
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
@@ -53,21 +54,17 @@ public class MyInfoCommand {
             @ParamName("message") Message message
     ){
         String text = message.getText();
-        Optional<User> candidateForProcessing = userRepo.find(userId);
+        User user = userService.findUser(userId);
+        setValue(user, text);
 
-        if (candidateForProcessing.isPresent()) {
-            User user = candidateForProcessing.get();
-            setValue(user, text);
+        userService.save(user);
 
-            userRepo.save(user);
+        SendMessage sendMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text(provideNewText(user))
+                .build();
 
-            SendMessage sendMessage = SendMessage.builder()
-                    .chatId(chatId)
-                    .text(provideNewText(user))
-                    .build();
-
-            context.getEngine().executeNotException(sendMessage);
-        }
+        context.getEngine().executeNotException(sendMessage);
     }
 
     private void setValue(User user, String text) {
