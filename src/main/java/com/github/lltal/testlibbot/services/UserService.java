@@ -1,41 +1,22 @@
 package com.github.lltal.testlibbot.services;
 
-import com.github.lltal.testlibbot.domain.User;
-import com.github.lltal.testlibbot.repository.UserRepo;
-import lombok.AllArgsConstructor;
+import com.github.lltal.testlibbot.model.domain.UserData;
+import com.github.lltal.testlibbot.output.repository.impl.UserDataRepo;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.jvnet.hk2.annotations.Service;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
 
-import javax.persistence.LockModeType;
-
-@Service
 @RequiredArgsConstructor
+@Service
 public class UserService {
-    @NonNull
-    private final UserRepo userRepo;
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    public User createIfAbsent(Long userId){
-        return userRepo
-                .findById(userId)
-                .orElse(
-                        userRepo.save(new User(userId)));
+    private final UserDataRepo userRepo;
+
+    public UserData findUser(Long userId){
+        return userRepo.get(userId);
     }
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    public void save(User user){
-        userRepo.save(user);
-    }
-
-    @Lock(LockModeType.PESSIMISTIC_READ)
-    public User findUser(Long userId){
-        return userRepo
-                .findById(userId)
-                .orElseThrow(IllegalArgumentException::new);
+    public void save(Long userId, UserData user){
+        userRepo.save(userId, user);
     }
 }

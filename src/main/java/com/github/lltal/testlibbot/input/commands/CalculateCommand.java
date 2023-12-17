@@ -1,12 +1,11 @@
-package com.github.lltal.testlibbot.commands;
+package com.github.lltal.testlibbot.input.commands;
 
-import com.github.lltal.testlibbot.domain.CalculateCommandData;
-import com.github.lltal.testlibbot.domain.User;
+import com.github.lltal.testlibbot.model.domain.CalculateCommandData;
 import com.github.lltal.testlibbot.services.CalculationCommandDataService;
-import com.github.lltal.testlibbot.services.UserService;
 import com.github.lltal.testlibbot.utils.Action;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import ru.wdeath.telegram.bot.starter.annotations.CommandFirst;
@@ -23,9 +22,9 @@ import java.util.List;
 
 @CommandNames("/calculate")
 @AllArgsConstructor
+@Component
 public class CalculateCommand {
-    @NonNull
-    private final UserService userService;
+
     @NonNull
     private final CalculationCommandDataService dataService;
 
@@ -47,9 +46,8 @@ public class CalculateCommand {
             @ParamName("chatId") Long chatId,
             @ParamName("userId") Long userId
     ) {
-        User user = userService.createIfAbsent(userId);
-        CalculateCommandData commandData = new CalculateCommandData(user);
-        dataService.saveData(commandData);
+        CalculateCommandData commandData = new CalculateCommandData();
+        dataService.saveData(userId, commandData);
 
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
@@ -67,10 +65,10 @@ public class CalculateCommand {
             @ParamName("message") Message message
     ){
         String text = message.getText();
-        CalculateCommandData data = dataService.findData(userId);
+        CalculateCommandData data = dataService.findDataByUserId(userId);
         setValue(data, text);
 
-        dataService.saveData(data);
+        dataService.saveData(userId, data);
 
         context.getEngine().executeNotException(provideNewSendMessage(data, chatId));
     }

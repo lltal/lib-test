@@ -1,19 +1,21 @@
 package com.github.lltal.testlibbot.services;
 
-import com.github.lltal.testlibbot.domain.CalculateCommandData;
-import com.github.lltal.testlibbot.repository.CalculateCommandDataRepo;
+import com.github.lltal.testlibbot.model.domain.CalculateCommandData;
+import com.github.lltal.testlibbot.output.repository.impl.CalculationDataRepo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
+@Service
 public class CalculationCommandDataService {
-    private final CalculateCommandDataRepo dataRepo;
 
-    public void saveData(CalculateCommandData data){
-        dataRepo.save(data);
+    private final CalculationDataRepo dataRepo;
+
+    public CalculateCommandData findDataByUserId(Long userId){
+        return dataRepo.get(userId);
     }
 
-    public CalculateCommandData findData(Long userId){
-        return dataRepo.findDataByUserId(userId);
+    public void saveData(long userId, CalculateCommandData data){
+        dataRepo.save(userId, data);
     }
-
 }

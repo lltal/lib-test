@@ -1,4 +1,4 @@
-package com.github.lltal.testlibbot.commands;
+package com.github.lltal.testlibbot.input.commands;
 
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -16,7 +16,7 @@ public class StartCommand {
             CommandContext context,
             @ParamName("chatId") Long chatId
     ) {
-        String text = "Привет, посчитать - /calculcate";
+        String text = "Привет, посчитать - /calculate";
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text(text)

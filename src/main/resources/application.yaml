@@ -29,7 +29,6 @@ spring:
     username: postgres
     password: postgres
   jpa:
-    hibernate:
-      ddl-auto: validate
     open-in-view: false
+    generate-ddl: true
     show-sql: true

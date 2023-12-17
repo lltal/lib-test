@@ -1,7 +1,6 @@
-package com.github.lltal.testlibbot.commands;
+package com.github.lltal.testlibbot.input.commands;
 
-import com.github.lltal.testlibbot.domain.User;
-import com.github.lltal.testlibbot.repository.UserRepo;
+import com.github.lltal.testlibbot.model.domain.UserData;
 import com.github.lltal.testlibbot.services.UserService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +14,10 @@ import ru.wdeath.telegram.bot.starter.annotations.ParamName;
 import ru.wdeath.telegram.bot.starter.command.CommandContext;
 
 import java.util.List;
-import java.util.Optional;
 
 @CommandNames("/my_info")
-@Component
 @RequiredArgsConstructor
+@Component
 public class MyInfoCommand {
 
     @NonNull
@@ -35,12 +33,12 @@ public class MyInfoCommand {
             @ParamName("chatId") Long chatId,
             @ParamName("userId") Long userId
     ) {
-
-        User user = userService.createIfAbsent(userId);
+        UserData userData = new UserData();
+        userService.save(userId, userData);
 
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
-                .text(provideNewText(user))
+                .text(provideNewText(userData))
                 .build();
 
         context.getEngine().executeNotException(sendMessage);
@@ -54,40 +52,40 @@ public class MyInfoCommand {
             @ParamName("message") Message message
     ){
         String text = message.getText();
-        User user = userService.findUser(userId);
-        setValue(user, text);
+        UserData userData = userService.findUser(userId);
+        setValue(userData, text);
 
-        userService.save(user);
+        userService.save(userId, userData);
 
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
-                .text(provideNewText(user))
+                .text(provideNewText(userData))
                 .build();
 
         context.getEngine().executeNotException(sendMessage);
     }
 
-    private void setValue(User user, String text) {
-        int filledFieldCounter = user.getFilledFieldCounter();
+    private void setValue(UserData userData, String text) {
+        int filledFieldCounter = userData.getFilledFieldCounter();
         if (filledFieldCounter == 0) {
-            user.setName(text);
+            userData.setName(text);
         } else if (filledFieldCounter == 1) {
-            user.setAge(Integer.parseInt(text));
+            userData.setAge(Integer.parseInt(text));
         } else if (filledFieldCounter == 2) {
-            user.setWeight(Double.parseDouble(text));
+            userData.setWeight(Double.parseDouble(text));
         }
-        user.setFilledFieldCounter(++filledFieldCounter);
+        userData.setFilledFieldCounter(++filledFieldCounter);
     }
 
-    private String provideNewText(User user){
-        return user.getFilledFieldCounter() < messagesText.size() ?
-                messagesText.get(user.getFilledFieldCounter()) :
-                generateLastMessageText(user);
+    private String provideNewText(UserData userData){
+        return userData.getFilledFieldCounter() < messagesText.size() ?
+                messagesText.get(userData.getFilledFieldCounter()) :
+                generateLastMessageText(userData);
     }
 
-    private String generateLastMessageText(User user) {
+    private String generateLastMessageText(UserData userData) {
         return String.format("%s, тебе осталось жить %.2f лет",
-                user.getName(),
-                (user.getWeight() * user.getAge()) / 100);
+                userData.getName(),
+                (userData.getWeight() * userData.getAge()) / 100);
     }
 }
