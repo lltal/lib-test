@@ -15,6 +15,7 @@ import ru.wdeath.telegram.bot.starter.annotations.ParamName;
 import ru.wdeath.telegram.bot.starter.callback.CallbackData;
 import ru.wdeath.telegram.bot.starter.callback.CallbackDataSender;
 import ru.wdeath.telegram.bot.starter.command.CommandContext;
+import ru.wdeath.telegram.bot.starter.session.UserBotSession;
 import ru.wdeath.telegram.bot.starter.util.KeyboardUtil;
 
 import java.util.Arrays;
@@ -43,6 +44,7 @@ public class CalculateCommand {
     @CommandFirst
     public void execCalculate(
             CommandContext context,
+            UserBotSession userBotSession,
             @ParamName("chatId") Long chatId,
             @ParamName("userId") Long userId
     ) {
