@@ -1,13 +1,16 @@
 package com.github.lltal.testlibbot.input.commands;
 
+import com.github.lltal.testlibbot.input.commands.dto.CalculateDto;
+import com.github.lltal.testlibbot.input.commands.messages.CalculateCommandMessage;
+import com.github.lltal.testlibbot.input.commands.messages.MathOperation;
 import com.github.lltal.testlibbot.model.domain.CalculateCommandData;
 import com.github.lltal.testlibbot.services.CalculationCommandDataService;
-import com.github.lltal.testlibbot.utils.Action;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import ru.wdeath.telegram.bot.starter.TelegramLongPollingEngine;
 import ru.wdeath.telegram.bot.starter.annotations.CommandFirst;
 import ru.wdeath.telegram.bot.starter.annotations.CommandNames;
 import ru.wdeath.telegram.bot.starter.annotations.CommandOther;
@@ -19,91 +22,100 @@ import ru.wdeath.telegram.bot.starter.session.UserBotSession;
 import ru.wdeath.telegram.bot.starter.util.KeyboardUtil;
 
 import java.util.Arrays;
-import java.util.List;
 
 @CommandNames("/calculate")
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Component
-public class CalculateCommand {
+public final class CalculateCommand {
 
-    @NonNull
-    private final CalculationCommandDataService dataService;
-
+    private final CalculationCommandDataService calculationService;
     private final CallbackDataSender[][] buttons = {
-                Arrays.stream(Action.getAllActions())
+            Arrays.stream(MathOperation.getAllActions())
                     .map(action -> new CallbackDataSender(action, new CallbackData(action, "")))
                     .toArray(CallbackDataSender[]::new)};
-
-    private final List<String> messagesText = List.of(
-            "введи первое число",
-            "введи второе число",
-            "выбери математическую операцию");
-
-    private final int INDEX_OF_LAST_ELEMENT_IN_MESSAGES_TEXT = messagesText.size() - 1;
 
     @CommandFirst
     public void execCalculate(
             CommandContext context,
-            UserBotSession userBotSession,
             @ParamName("chatId") Long chatId,
-            @ParamName("userId") Long userId
+            UserBotSession userBotSession
     ) {
-        CalculateCommandData commandData = new CalculateCommandData();
-        dataService.saveData(userId, commandData);
-
-        SendMessage sendMessage = SendMessage.builder()
-                .chatId(chatId)
-                .text(provideNewText(commandData))
-                .build();
-
-        context.getEngine().executeNotException(sendMessage);
+        CalculateDto calculateDto = new CalculateDto();
+        userBotSession.setData(calculateDto);
+        send(calculateDto, context.getEngine(), chatId);
     }
 
     @CommandOther
     public void other(
             CommandContext context,
+            UserBotSession userSession,
             @ParamName("chatId") Long chatId,
             @ParamName("userId") Long userId,
             @ParamName("message") Message message
     ){
-        String text = message.getText();
-        CalculateCommandData data = dataService.findDataByUserId(userId);
-        setValue(data, text);
-
-        dataService.saveData(userId, data);
-
-        context.getEngine().executeNotException(provideNewSendMessage(data, chatId));
-    }
-
-    private SendMessage provideNewSendMessage(CalculateCommandData data, Long chatId){
-        String text = provideNewText(data);
-        return text.equals(messagesText.get(INDEX_OF_LAST_ELEMENT_IN_MESSAGES_TEXT))
-                ?
-                SendMessage.builder()
-                        .chatId(chatId)
-                        .text(provideNewText(data))
-                        .replyMarkup(KeyboardUtil.inline(buttons))
-                        .build()
-                :
-                SendMessage.builder()
-                        .chatId(chatId)
-                        .text(provideNewText(data))
-                        .build();
-    }
-
-    private void setValue(CalculateCommandData data, String text) {
-        int filledFieldCounter = data.getFilledFieldCounter();
-        if (filledFieldCounter == 0) {
-            data.setFirstNumber(Double.parseDouble(text));
-        } else if (filledFieldCounter == 1) {
-            data.setSecondNumber(Double.parseDouble(text));
+        CalculateDto calculateDto = (CalculateDto) userSession.getData();
+        TelegramLongPollingEngine engine = context.getEngine();
+        switch (calculateDto.getCurrentMessage()){
+            case FIRST_NUMBER -> {
+                calculateDto.setFirstNumber(Integer.parseInt(message.getText()));
+                calculateDto.setCurrentMessage(CalculateCommandMessage.SECOND_NUMBER);
+                send(calculateDto, engine, chatId);
+            }
+            case SECOND_NUMBER -> {
+                calculateDto.setSecondNumber(Integer.parseInt(message.getText()));
+                calculateDto.setCurrentMessage(CalculateCommandMessage.MATH_OPERATION);
+                sendWithKeyBoard(calculateDto.getCurrentMessage().getMessageText(), engine, chatId);
+            }
+            case MATH_OPERATION -> {
+                calculateResult(calculateDto, context.getName());
+                calculationService.saveData(userId, new CalculateCommandData(calculateDto));
+                closeCallback(context);
+                send(
+                        String.format("Результат: %.2f", calculateDto.getCalculationResult()),
+                        engine, chatId);
+            }
         }
-        data.setFilledFieldCounter(++filledFieldCounter);
     }
 
-    private String provideNewText(CalculateCommandData data){
-        return data.getFilledFieldCounter() < messagesText.size() ?
-                messagesText.get(data.getFilledFieldCounter()) :
-                "ошибка ввода";
+    private void calculateResult(CalculateDto calculateDto, String mathOperation){
+        switch (mathOperation) {
+            case MathOperation.MULTIPLY -> {
+                calculateDto.setCalculationResult(calculateDto.getFirstNumber() * calculateDto.getSecondNumber());
+            }
+            case MathOperation.DIVISION -> {
+                calculateDto.setCalculationResult(calculateDto.getFirstNumber() / calculateDto.getSecondNumber());
+            }
+            case MathOperation.INCREMENT -> {
+                calculateDto.setCalculationResult(calculateDto.getFirstNumber() + calculateDto.getSecondNumber());
+            }
+            case MathOperation.DECREMENT -> {
+                calculateDto.setCalculationResult(calculateDto.getFirstNumber() - calculateDto.getSecondNumber());
+            }
+        }
+    }
+
+    private void closeCallback(CommandContext context){
+        AnswerCallbackQuery close = AnswerCallbackQuery.builder()
+                .callbackQueryId(context.getUpdate().getCallbackQuery().getId()).build();
+        context.getEngine().executeNotException(close);
+    }
+
+    private void send(CalculateDto calculateDto, TelegramLongPollingEngine engine, Long chatId){
+        send(calculateDto.getCurrentMessage().getMessageText(), engine, chatId);
+    }
+
+    private void send(String text, TelegramLongPollingEngine engine, Long chatId) {
+        engine.executeNotException(SendMessage.builder()
+                .text(text)
+                .chatId(chatId)
+                .build());
+    }
+
+    private void sendWithKeyBoard(String text, TelegramLongPollingEngine engine, Long chatId){
+        engine.executeNotException(SendMessage.builder()
+                .text(text)
+                .chatId(chatId)
+                .replyMarkup(KeyboardUtil.inline(buttons))
+                .build());
     }
 }

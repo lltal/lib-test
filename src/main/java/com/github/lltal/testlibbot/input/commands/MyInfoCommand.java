@@ -1,74 +1,82 @@
 package com.github.lltal.testlibbot.input.commands;
 
+import com.github.lltal.testlibbot.input.commands.dto.MyInfoDto;
 import com.github.lltal.testlibbot.input.commands.messages.MyInfoCommandMessage;
-import com.github.lltal.testlibbot.input.dto.MyInfoDto;
 import com.github.lltal.testlibbot.model.domain.UserData;
 import com.github.lltal.testlibbot.services.UserDataService;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import ru.wdeath.telegram.bot.starter.TelegramLongPollingEngine;
 import ru.wdeath.telegram.bot.starter.annotations.CommandFirst;
 import ru.wdeath.telegram.bot.starter.annotations.CommandNames;
 import ru.wdeath.telegram.bot.starter.annotations.CommandOther;
 import ru.wdeath.telegram.bot.starter.annotations.ParamName;
 import ru.wdeath.telegram.bot.starter.command.CommandContext;
-
-import java.util.List;
+import ru.wdeath.telegram.bot.starter.session.UserBotSession;
 
 @CommandNames("/my_info")
 @Component
-public class MyInfoCommand {
+@RequiredArgsConstructor
+public final class MyInfoCommand {
+
+    private final UserDataService userDataService;
 
     @CommandFirst
     public void execMyInfo(
             CommandContext context,
             @ParamName("chatId") Long chatId,
-            @ParamName("userId") Long userId
+            UserBotSession userBotSession
     ) {
         MyInfoDto myInfoDto = new MyInfoDto();
+        userBotSession.setData(myInfoDto);
+        send(myInfoDto, context.getEngine(), chatId);
 
-        SendMessage sendMessage = SendMessage.builder()
-                .chatId(chatId)
-                .text()
-                .build();
-
-        context.getEngine().executeNotException(sendMessage);
     }
 
     @CommandOther
     public void other(
             CommandContext context,
+            UserBotSession userSession,
             @ParamName("chatId") Long chatId,
             @ParamName("userId") Long userId,
             @ParamName("message") Message message
     ){
-        String text = message.getText();
-        UserData userData = userService.findUserData(userId);
-        setValue(userData, text);
-
-        userService.save(userId, userData);
-
-        SendMessage sendMessage = SendMessage.builder()
-                .chatId(chatId)
-                .text(provideNewText(userData))
-                .build();
-
-        context.getEngine().executeNotException(sendMessage);
-    }
-
-    private String provideNextMessage(MyInfoDto myInfoDto){
-        switch (myInfoDto.getCurrentMessage()) {
+        MyInfoDto myInfoDto = (MyInfoDto) userSession.getData();
+        TelegramLongPollingEngine engine = context.getEngine();
+        switch (myInfoDto.getCurrentMessage()){
             case NAME -> {
-                return "Введи имя";
+                myInfoDto.setName(message.getText());
+                myInfoDto.setCurrentMessage(MyInfoCommandMessage.AGE);
+                send(myInfoDto, engine, chatId);
+
             }
             case AGE -> {
-                return "Введи возраст";
+                myInfoDto.setAge(Integer.parseInt(message.getText()));
+                myInfoDto.setCurrentMessage(MyInfoCommandMessage.WEIGHT);
+                send(myInfoDto, engine, chatId);
             }
             case WEIGHT -> {
-                return "Введи вес";
+                myInfoDto.setWeight(Double.parseDouble(message.getText()));
+                userDataService.save(userId, new UserData(myInfoDto));
+                send(calculateRemainingAge(myInfoDto), engine, chatId);
             }
         }
+    }
+
+    private String calculateRemainingAge(MyInfoDto myInfoDto){
+        return String.format("Тебе осталось жить %.2f лет", myInfoDto.getAge() * myInfoDto.getWeight() / 100);
+    }
+
+    private void send(MyInfoDto myInfoDto, TelegramLongPollingEngine engine, Long chatId){
+        send(myInfoDto.getCurrentMessage().getMessageText(), engine, chatId);
+    }
+
+    private void send(String text, TelegramLongPollingEngine engine, Long chatId){
+        engine.executeNotException(SendMessage.builder()
+                .text(text)
+                .chatId(chatId)
+                .build());
     }
 }

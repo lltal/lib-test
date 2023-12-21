@@ -8,13 +8,9 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class CalculationCommandDataServiceImpl implements CalculationCommandDataService {
+public final class CalculationCommandDataServiceImpl implements CalculationCommandDataService {
 
     private final CalculationDataRepo dataRepo;
-
-    public CalculateCommandData findDataByUserId(Long userId){
-        return dataRepo.get(userId);
-    }
 
     public void saveData(Long userId, CalculateCommandData data){
         dataRepo.save(userId, data);

@@ -1,13 +1,17 @@
 package com.github.lltal.testlibbot.model.domain;
 
+import com.github.lltal.testlibbot.input.commands.dto.MyInfoDto;
 import lombok.Data;
-import ru.wdeath.managerbot.lib.db.UserTelegramEntity;
 
 @Data
-public class UserData{
-    private String name;
-    private int age;
-    private double weight;
-    private int filledFieldCounter;
-    private UserTelegramEntity userTelegramEntity;
+public final class UserData{
+    private final int age;
+    private final String name;
+    private final double weight;
+
+    public UserData(MyInfoDto myInfoDto){
+        this.age = myInfoDto.getAge();
+        this.name = myInfoDto.getName();
+        this.weight = myInfoDto.getWeight();
+    }
 }

@@ -8,16 +8,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class UserDataRepo implements Repository<Long, UserData> {
+public final class UserDataRepo implements Repository<Long, UserData> {
     private final Map<Long, UserData> userRepo = new ConcurrentHashMap<>();
 
     @Override
     public UserData save(Long key, UserData value) {
         return userRepo.put(key, value);
-    }
-
-    @Override
-    public UserData get(Long key) {
-        return userRepo.get(key);
     }
 }

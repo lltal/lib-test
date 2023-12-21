@@ -1,6 +1,6 @@
-package com.github.lltal.testlibbot.utils;
+package com.github.lltal.testlibbot.input.commands.messages;
 
-public class Action {
+public final class MathOperation {
     public static final String MULTIPLY = "*";
     public static final String DIVISION = "/";
     public static final String INCREMENT = "+";
@@ -10,4 +10,5 @@ public class Action {
     public static String[] getAllActions(){
         return actions;
     }
+
 }

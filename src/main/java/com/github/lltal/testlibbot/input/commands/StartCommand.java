@@ -9,7 +9,7 @@ import ru.wdeath.telegram.bot.starter.command.CommandContext;
 
 @CommandNames("/start")
 @Component
-public class StartCommand {
+public final class StartCommand {
 
     @CommandFirst
     public void execStart(

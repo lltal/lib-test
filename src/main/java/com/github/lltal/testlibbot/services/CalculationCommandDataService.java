@@ -10,13 +10,6 @@ import com.github.lltal.testlibbot.model.domain.UserData;
 public interface CalculationCommandDataService {
 
     /**
-     * Получить данные пользователя для вычислений по id пользователя
-     *
-     * @param userId идентификатор польлзователя
-     */
-    CalculateCommandData findDataByUserId(Long userId);
-
-    /**
      * Сохранить данные пользователя для вычислений по id пользователя
      *
      * @param userId идентификатор пользователя
